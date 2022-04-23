@@ -1,7 +1,17 @@
 {
   "name": "fastify-sign-in-with-ethereum",
   "version": "0.1.0",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
-    "fastify-plugin": "^3.0.1"
+    "fastify-plugin": "^3.0.1",
+    "siwe": "^1.1.6"
+  },
+  "devDependencies": {
+    "fastify": "^3.28.0",
+    "typescript": "^4.6.3"
   }
 }

@@ -1,11 +1,22 @@
-import { useState } from 'react'
-import logo from './logo.svg'
 import './App.css'
 import { providers } from 'ethers'
 import { SiweMessage } from 'siwe';
 
 async function getNonce(): Promise<string> {
-  return 'test'
+  const req = await fetch('http://localhost:3001/siwe/init', { method: 'POST'})
+  const { nonce } = await req.json()
+  return nonce
+}
+
+async function checkAuthStatus(): Promise<boolean> {
+  const token = localStorage.getItem('authToken')
+
+  const req = await fetch('http://localhost:3001/siwe/me', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  })
+  return await req.json()
 }
 
 function App() {
@@ -31,9 +42,11 @@ function App() {
 
     const signature = await signer.signMessage(message.prepareMessage());
 
-    localStorage.setItem('signature', JSON.stringify({ signature, message }));
+    localStorage.setItem('authToken', JSON.stringify({ signature, message }));
 
     console.log({ message, signature })
+
+    console.log(await checkAuthStatus())
   }
 
   return (
