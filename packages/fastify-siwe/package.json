@@ -9,7 +9,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com:vanruch/fastify-siwe"
+    "url": "git@github.com:vanruch/fastify-siwe.git"
   },
   "keywords": ["fastify", "Sign in with Ethereum", "siwe", "ethereum", "auth"],
   "scripts": {
