@@ -30,6 +30,21 @@ const store = new Store()
 
 fastify.register(signInWithEthereum(store))
 
+
+fastify.post(
+  '/siwe/init',
+  {},
+  async function handler(
+    this: FastifyInstance,
+    req: FastifyRequest,
+    reply,
+  ) {
+    reply.send({
+      nonce: await req.siwe.generateNonce(),
+    })
+  },
+)
+
 fastify.get(
   '/siwe/me',
   {},
