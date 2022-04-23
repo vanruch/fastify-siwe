@@ -1,5 +1,5 @@
-import createFastify, {FastifyInstance, FastifyRequest} from 'fastify'
-import {signInWithEthereum,} from 'fastify-siwe'
+import createFastify, { FastifyInstance, FastifyRequest } from 'fastify'
+import { signInWithEthereum } from 'fastify-siwe'
 import cors from 'fastify-cors'
 
 const fastify = createFastify({ logger: true })
