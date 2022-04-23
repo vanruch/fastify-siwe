@@ -31,6 +31,8 @@ function App() {
 
     const signature = await signer.signMessage(message.prepareMessage());
 
+    localStorage.setItem('signature', JSON.stringify({ signature, message }));
+
     console.log({ message, signature })
   }
 
