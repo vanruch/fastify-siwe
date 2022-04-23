@@ -1,5 +1,5 @@
 {
-  "name": "fastify-sign-in-with-ethereum",
+  "name": "fastify-siwe",
   "version": "0.1.0",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
