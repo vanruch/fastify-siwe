@@ -35,6 +35,7 @@ importers:
 
   packages/fastify-sign-in-with-ethereum:
     specifiers:
+      '@types/node': ^17.0.25
       fastify: ^3.28.0
       fastify-plugin: ^3.0.1
       siwe: ^1.1.6
@@ -43,6 +44,7 @@ importers:
       fastify-plugin: 3.0.1
       siwe: 1.1.6
     devDependencies:
+      '@types/node': 17.0.25
       fastify: 3.28.0
       typescript: 4.6.3
 
@@ -839,6 +841,10 @@ packages:
       '@swc/core-win32-arm64-msvc': 1.2.171
       '@swc/core-win32-ia32-msvc': 1.2.171
       '@swc/core-win32-x64-msvc': 1.2.171
+    dev: true
+
+  /@types/node/17.0.25:
+    resolution: {integrity: sha512-wANk6fBrUwdpY4isjWrKTufkrXdu1D2YHCot2fD/DfWxF5sMrVSA+KN7ydckvaTCh0HiqX9IVl0L5/ZoXg5M7w==}
     dev: true
 
   /@types/prop-types/15.7.5:
