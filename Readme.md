@@ -1,1 +1,0 @@
-packages/fastify-siwe/README.md
