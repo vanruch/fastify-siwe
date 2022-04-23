@@ -1,20 +1,62 @@
 import type {FastifyInstance, FastifyRequest} from 'fastify'
-
+import fp from 'fastify-plugin'
 import {generateNonce, SiweMessage} from 'siwe'
 
 export interface SiweSession {
   nonce: string
-  timestamp?: Date
-  address?: string
+  message?: SiweMessage
 }
 
 export interface SessionAccess {
   store(session: SiweSession): Promise<void>,
+
   delete(session: SiweSession): Promise<void>,
+
   get(nonce: string): Promise<SiweSession | undefined>,
 }
 
-export const signInWithEthereum = (session: SessionAccess) => async (fastify: FastifyInstance) => {
+declare module 'fastify' {
+  interface FastifyRequest {
+    siweSession: SiweSession | null
+  }
+}
+
+
+export const signInWithEthereum = (session: SessionAccess) => fp(async (fastify: FastifyInstance) => {
+
+  fastify.decorate('siweSession', null)
+
+  fastify.addHook('preHandler', async (request, reply) => {
+    const authHeader = request.headers.authorization
+    console.log({authHeader})
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return
+    }
+
+    try {
+      const token = authHeader.slice(authHeader.indexOf(' ') + 1)
+
+      const {message, signature} = JSON.parse(token)
+
+      const siweMessage = new SiweMessage(message)
+
+      await siweMessage.validate(signature)
+      const currentSession = await session.get(siweMessage.nonce)
+
+      if (!currentSession || siweMessage.nonce !== currentSession.nonce) {
+        reply.status(403).send('invalid nonce')
+        return
+      }
+
+      currentSession.message = siweMessage
+      await session.store(currentSession)
+      request.siweSession = currentSession
+    } catch (err) {
+      console.log(err)
+      reply.status(401).send()
+    }
+  })
+
   fastify.post(
     '/siwe/init',
     {},
@@ -26,7 +68,6 @@ export const signInWithEthereum = (session: SessionAccess) => async (fastify: Fa
       const nonce = generateNonce()
       await session.store({
         nonce,
-        timestamp: new Date(),
       })
       reply.send({nonce})
     },
@@ -40,38 +81,15 @@ export const signInWithEthereum = (session: SessionAccess) => async (fastify: Fa
       req: FastifyRequest,
       reply,
     ) {
-      const authHeader = req.headers.authorization
-      console.log({authHeader})
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      if (!req.siweSession) {
         reply.status(401).send()
         return
       }
 
-      try {
-        const token = authHeader.slice(authHeader.indexOf(' ') + 1)
-
-        const {message, signature} = JSON.parse(token)
-
-        const siweMessage = new SiweMessage(message)
-
-        await siweMessage.validate(signature)
-        const currentSession = await session.get(siweMessage.nonce)
-
-        console.log({currentSession})
-
-        if (!currentSession || siweMessage.nonce !== currentSession.nonce) {
-          reply.status(403).send('invalid nonce')
-          return
-        }
-
-        reply.code(200).send({
-          loggedIn: true,
-          message: siweMessage,
-        })
-      } catch (err) {
-        console.log(err)
-        reply.status(401).send()
-      }
+      reply.code(200).send({
+        loggedIn: true,
+        message: req.siweSession.message,
+      })
     },
   )
-}
+}, {name: 'SIWE'})
