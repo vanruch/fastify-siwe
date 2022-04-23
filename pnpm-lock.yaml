@@ -26,7 +26,10 @@ importers:
       vite: 2.9.5
 
   packages/fastify-sign-in-with-ethereum:
-    specifiers: {}
+    specifiers:
+      fastify-plugin: ^3.0.1
+    dependencies:
+      fastify-plugin: 3.0.1
 
 packages:
 
@@ -1050,6 +1053,10 @@ packages:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+    dev: false
+
+  /fastify-plugin/3.0.1:
+    resolution: {integrity: sha512-qKcDXmuZadJqdTm6vlCqioEbyewF60b/0LOFCcYN1B6BIZGlYJumWWOYs70SFYLDAH4YqdE1cxH/RKMG7rFxgA==}
     dev: false
 
   /fsevents/2.3.2:
