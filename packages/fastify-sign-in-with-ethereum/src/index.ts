@@ -1,83 +1,62 @@
-import type {FastifyInstance, FastifyRequest} from 'fastify'
+import type { FastifyInstance, FastifyRequest } from 'fastify'
 import fp from 'fastify-plugin'
-import {generateNonce, SiweMessage} from 'siwe'
+import { SiweMessage } from 'siwe'
+import { InMemoryStore } from './InMemoryStore'
+import { SiweApi } from './SiweApi'
+import { SessionStore } from './types'
 
-export interface StoredSession {
-  nonce: string
-  message?: SiweMessage
+export interface FastifySiweOptions {
+  store?: SessionStore
 }
 
-export interface SessionAccess {
-  store(session: StoredSession): Promise<void>,
+export const signInWithEthereum = ({ store = new InMemoryStore() }: FastifySiweOptions = {}) =>
+  fp(async (fastify: FastifyInstance) => {
+    fastify.addHook('preHandler', async (request, reply) => {
+      request.siwe = new SiweApi(store)
 
-  delete(session: StoredSession): Promise<void>,
-
-  get(nonce: string): Promise<StoredSession | undefined>,
-}
-
-class SiweApi {
-  constructor(
-    private readonly _store: SessionAccess,
-  ) {}
-
-  public session?: SiweMessage
-
-  async generateNonce(): Promise<string> {
-    const nonce = generateNonce()
-    await this._store.store({
-      nonce,
-    })
-    return nonce
-  }
-
-  async destroySession(): Promise<void> {
-    this.session = undefined
-  }
-}
-
-declare module 'fastify' {
-  interface FastifyRequest {
-    siwe: SiweApi
-  }
-}
-
-
-export const signInWithEthereum = (store: SessionAccess) => fp(async (fastify: FastifyInstance) => {
-
-  fastify.addHook('preHandler', async (request, reply) => {
-    request.siwe = new SiweApi(store)
-
-    const authHeader = request.headers.authorization
-    console.log({authHeader})
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return
-    }
-
-    try {
-      const token = authHeader.slice(authHeader.indexOf(' ') + 1)
-
-      console.log({token})
-
-      const {message, signature} = JSON.parse(token)
-
-      const siweMessage = new SiweMessage(message)
-
-      await siweMessage.validate(signature)
-      const currentSession = await store.get(siweMessage.nonce)
-      console.log({currentSession, siweMessage})
-      if (!currentSession || siweMessage.nonce !== currentSession.nonce) {
-        reply.status(403).send('invalid nonce')
+      const token = extractAuthToken(request)
+      if (!token) {
         return
       }
 
-      currentSession.message = siweMessage
-      await store.store(currentSession)
+      try {
+        const siweMessage = await parseAndValidateToken(token)
 
-      request.siwe.session = siweMessage
-    } catch (err) {
-      console.log('ERR', err)
-      reply.status(401).send()
-    }
-  })
+        const currentSession = await store.get(siweMessage.nonce)
+        if (!currentSession || siweMessage.nonce !== currentSession.nonce) {
+          reply.status(403).send('Invalid nonce')
+          return
+        }
 
-}, {name: 'SIWE'})
+        currentSession.message = siweMessage
+        await store.save(currentSession)
+
+        request.siwe.session = siweMessage
+      } catch (err) {
+        console.log('ERR', err)
+        reply.status(401).send()
+      }
+    })
+
+  }, { name: 'SIWE' })
+
+export { SessionStore, InMemoryStore }
+
+function extractAuthToken(request: FastifyRequest): string | undefined {
+  const authHeader = request.headers.authorization
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return
+  }
+
+  return authHeader.slice(authHeader.indexOf(' ') + 1)
+}
+
+async function parseAndValidateToken(token: string): Promise<SiweMessage> {
+  const { message, signature } = JSON.parse(token)
+
+  const siweMessage = new SiweMessage(message)
+
+  await siweMessage.validate(signature)
+
+  return message
+}

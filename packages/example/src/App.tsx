@@ -1,14 +1,17 @@
 import './App.css'
 import { providers } from 'ethers'
 import { SiweMessage } from 'siwe';
+import { useEffect, useState } from 'react';
 
 async function getNonce(): Promise<string> {
-  const req = await fetch('http://localhost:3001/siwe/init', { method: 'POST'})
+  const req = await fetch('http://localhost:3001/siwe/init', { method: 'POST' })
   const { nonce } = await req.json()
   return nonce
 }
 
-async function checkAuthStatus(): Promise<boolean> {
+async function checkAuthStatus(): Promise<{
+  message?: SiweMessage,
+}> {
   const token = localStorage.getItem('authToken')
 
   const req = await fetch('http://localhost:3001/siwe/me', {
@@ -20,6 +23,8 @@ async function checkAuthStatus(): Promise<boolean> {
 }
 
 function App() {
+  const [message, setMessage] = useState<SiweMessage | undefined>()
+
   async function signIn() {
     const provider = new providers.Web3Provider((window as any).ethereum);
     // Prompt user for account connections
@@ -44,14 +49,29 @@ function App() {
 
     localStorage.setItem('authToken', JSON.stringify({ signature, message }));
 
-    console.log({ message, signature })
-
-    console.log(await checkAuthStatus())
+    checkAuthStatus().then((res) => setMessage(res?.message))
   }
+
+  function signOut() {
+    localStorage.removeItem('authToken')
+    setMessage(undefined)
+  }
+
+  useEffect(() => {
+    checkAuthStatus().then((res) => setMessage(res?.message))
+  }, [])
 
   return (
     <div className="App">
-      <button onClick={signIn}>Sign in</button>
+      <button onClick={signIn}>{!message ? 'Sign in' : 'Sign in again'}</button>
+      <button disabled={!message} onClick={signOut}>Sign out</button>
+      {message ? (
+        <>
+          <p>Logged in with {message.address}</p>
+          <p>Nonce: {message.nonce}</p>
+          <p>IssuedAt: {message.issuedAt}</p>
+        </>
+      ) : <p>Not logged in :(</p>}
     </div>
   )
 }
