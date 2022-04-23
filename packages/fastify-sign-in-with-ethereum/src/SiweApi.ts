@@ -17,6 +17,11 @@ export class SiweApi {
   }
 
   async destroySession(): Promise<void> {
+    if(!this.session?.nonce) {
+      throw new Error('No session to destroy');
+    }
+    
+    await this._store.remove(this.session.nonce);
     this.session = undefined;
   }
 }

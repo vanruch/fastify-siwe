@@ -6,9 +6,11 @@ export interface StoredSession {
 }
 
 export interface SessionStore {
+  get(nonce: string): Promise<StoredSession | undefined>,
+
   save(session: StoredSession): Promise<void>,
 
-  get(nonce: string): Promise<StoredSession | undefined>,
+  remove(nonce: string): Promise<void>
 }
 
 declare module 'fastify' {

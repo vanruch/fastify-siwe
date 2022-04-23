@@ -15,4 +15,8 @@ export class InMemoryStore implements SessionStore {
     return this.sessions[nonce]
   }
 
+  async remove(nonce: string): Promise<void> {
+    delete this.sessions[nonce]
+  }
+
 }

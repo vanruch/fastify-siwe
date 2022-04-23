@@ -33,7 +33,6 @@ export const signInWithEthereum = ({ store = new InMemoryStore() }: FastifySiweO
 
         request.siwe.session = siweMessage
       } catch (err) {
-        console.log('ERR', err)
         reply.status(401).send()
       }
     })
